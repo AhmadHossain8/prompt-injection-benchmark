@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets / local config
+.env
+.env.*
+
+# Run logs (benchmark outputs in results/ are kept)
+results/*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
