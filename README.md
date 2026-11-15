@@ -82,6 +82,47 @@ dataset mean something.
 All of these numbers are a lower bound, and 50 prompts per language is a small
 sample. See [Limitations](#limitations-please-read) before quoting them.
 
+## Where this started: my CSE498R research
+
+This isn't the first time I've tested how well NLP tools handle Bangla. In
+Summer 2023, for my CSE498R directed research at North South University, our
+team (Mahiv Khan Wasi, Rashidul Hassan Borshon, Nihal Azman and me, supervised
+by Dr. Nabeel Mohammed) asked a narrower question: *does stemming Bangla text
+help a plagiarism checker catch paraphrased sentences?*
+
+We took 10 documents of 10 newspaper sentences each and paraphrased them with
+online tools. Then we embedded the originals and the paraphrases with
+BanglaBERT (`sagorsarker/bangla-bert-base`, `[CLS]` token), stored the vectors
+in Qdrant and compared them with cosine similarity. Each document went through
+three preprocessing setups:
+
+| Setup | Preprocessing | Average similarity (10 documents) |
+|---|---|---|
+| P1 | punctuation removed | 0.90 |
+| P2 | punctuation removed + stemming | **0.92** |
+| P3 | punctuation kept | ~0.89 |
+
+Stemming helped, but only a little. Six documents scored higher, three didn't
+change, and one dropped slightly (0.80 → 0.79). The gains were largest on the
+paraphrases that started out hardest to match, such as document 8
+(0.86 → 0.93) and document 9 (0.83 → 0.90).
+
+The stemmer itself turned out to be the weak link. It turned বসিয়ে into
+বসিয় instead of বসি, and বেলাই into বেল instead of বেলা. It also cut কেমন,
+which has no suffix at all, down to কেম. With only 10 documents we couldn't say
+how much better a more accurate stemmer would have done, but these errors
+clearly held the results back.
+
+The two projects share a thread. In both, a tool that works well for English
+was weaker on Bangla: the stemmer back then, and Llama 3.1's refusals here.
+The code and the full report are in the
+[CSE498-R repository](https://github.com/AhmadHossain8/CSE498-R). To try it
+yourself:
+
+```bash
+git clone https://github.com/AhmadHossain8/CSE498-R.git
+```
+
 ## Hardware and model choice
 
 Everything was measured on one laptop: an Intel Core i5-1334U (2 performance
