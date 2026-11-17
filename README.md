@@ -46,15 +46,16 @@ are close enough that a different set of prompts could swap them.
 
 ![Attack success rate by language](results/charts/asr_by_language.png)
 
-**Bangla attacks weren't more effective overall, but they were against Llama.**
-Across all three models, English and Bangla attacks succeeded at exactly the
-same rate (41.3%). Qwen and Gemma were actually a little harder to break in
-Bangla. Llama went the other way: its attack success rate doubled, from 16% in
-English to 32% in Bangla. 11 attacks that Llama refused in English worked once
-they were translated, and only 3 went the other direction. Most of those 11
-ended with the override code printed in plain text. Bengali isn't one of
-Llama 3.1's officially supported languages, and these results fit the idea that
-its safety training doesn't carry over well to languages it wasn't tuned on.
+**Bangla attacks weren't more effective overall, though Llama may be an
+exception.** Across all three models, English and Bangla attacks succeeded at
+exactly the same rate (41.3%). Qwen and Gemma were actually a little harder to
+break in Bangla. Llama went the other way: 32% in Bangla against 16% in
+English. 11 attacks it resisted in English worked in Bangla, and only 3 went
+the other way, and most of those 11 ended with the override code printed in
+plain text. With 50 pairs this is suggestive but not statistically significant
+(exact McNemar test, p ≈ 0.06). Bengali isn't one of Llama 3.1's officially
+supported languages, so a gap in its safety training is a plausible
+explanation, but a larger prompt set is needed to confirm it.
 
 **Banglish looks like the safest language, but partly for the wrong reason.**
 Only 22% of Banglish attacks succeeded. When I read the answers, though, some of
