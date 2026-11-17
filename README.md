@@ -193,7 +193,8 @@ pip install -r requirements.txt     # requests + matplotlib
 
 **How the translations were made:** I wrote the English prompts first and
 translated them into Bangla and Banglish with Claude. As a native Bangla
-speaker, I then reviewed the translations and corrected them by hand.
+speaker, I then reviewed every translation and corrected them by hand. I didn't
+record how many I changed.
 
 | Column | Meaning |
 |---|---|
