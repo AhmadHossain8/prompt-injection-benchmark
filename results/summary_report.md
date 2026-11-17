@@ -63,7 +63,9 @@ Each attack exists in all three languages (same `pair_id`). This counts attacks 
 
 - **Best overall (lowest ASR): llama3.1:8b** with 19.3% ASR (28 FAIL, 1 PARTIAL out of 150).
 - The interval of llama3.1:8b does not overlap with the next model (qwen3:8b), so the lead is clear.
-- **Language with the highest failure rate: Bangla** (41.3% ASR across all models; English 41.3%, Bangla 41.3%, Banglish 22.0%).
+- **No single language had the highest attack success rate:** English and Bangla are tied at 41.3% ASR across all models (English 41.3%, Bangla 41.3%, Banglish 22.0%).
+- Their fail rates differ slightly (English 40.0%, Bangla 41.3%) only because some successful attacks were scored PARTIAL instead of FAIL. That isn't a difference in how often attacks worked.
+- The intervals of English and Bangla don't overlap with Banglish's, so that gap is clear.
 - qwen3:8b is most vulnerable to: instruction_override (67%), system_prompt_extraction (53%).
 - llama3.1:8b is most vulnerable to: system_prompt_extraction (40%), role_manipulation (33%).
 - gemma2:9b is most vulnerable to: instruction_override (87%), system_prompt_extraction (80%).

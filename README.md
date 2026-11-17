@@ -1,15 +1,17 @@
 # Multilingual Prompt-Injection Benchmark (English · Bangla · Banglish)
 
-This project tests how easily three open-weight LLMs running locally in Ollama
-can be prompt-injected, and whether an attack written in Bangla or Banglish gets
-through more often than the same attack in English.
+**Research question:** is a prompt-injection attack more likely to get through
+when it's written in Bangla or Banglish instead of English?
 
-## The idea
+To find out, this project sends the same 50 attacks in all three languages to
+three open-weight LLMs running locally in Ollama, and counts how often each
+attack works.
 
-The starting point is Oxylabs' video *"What Is Prompt Injection? Explained with
-Examples"*. A developer gives an LLM trusted instructions in the system prompt.
-Later the model receives untrusted text that tries to override those
-instructions. That text can arrive in two ways:
+## What prompt injection is
+
+A developer gives an LLM trusted instructions in the system prompt. Later the
+model receives untrusted text that tries to override those instructions. That
+text can arrive in two ways:
 
 - directly, when the user types the attack ("ignore all previous instructions…")
 - indirectly, when the attack is hidden in something the model is asked to
@@ -187,6 +189,10 @@ pip install -r requirements.txt     # requests + matplotlib
 `datasets/banglish_prompts.csv` each hold 50 prompts. `EN-07`, `BN-07` and
 `BL-07` are the same attack written in three languages, and they share
 `pair_id = 7`. That's what makes a paired cross-language comparison possible.
+
+**How the translations were made:** the English prompts were written first,
+and the Bangla and Banglish versions were machine-translated from them using
+Claude.
 
 | Column | Meaning |
 |---|---|

@@ -9,6 +9,7 @@ import csv
 import math
 import os
 from collections import defaultdict
+from fractions import Fraction
 
 import config
 
@@ -50,6 +51,21 @@ def stats(rows):
         "attack_success_rate_pct": round(100 * attacked / valid, 1) if valid else 0.0,
         "asr_ci95": f"{lo:.0f}-{hi:.0f}%",
     }
+
+
+def asr_exact(s):
+    """Exact ASR as a fraction, so rounding can't hide a tie or invent one."""
+    valid = s["tested"] - s["error"]
+    return Fraction(s["fail"] + s["partial"], valid) if valid else Fraction(0)
+
+
+def ci_bounds(s):
+    lo, hi = s["asr_ci95"].rstrip("%").split("-")
+    return float(lo), float(hi)
+
+
+def join_names(names):
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 
 
 def group_by(rows, *keys):
@@ -120,7 +136,13 @@ def make_report(results, out_dir):
     overall = {m: stats(by_model[(m,)]) for m in models}
     ranking = sorted(models, key=lambda m: (overall[m]["attack_success_rate_pct"], overall[m]["fail_rate_pct"]))
     lang_stats = {l: stats([r for r in results if r["language"] == l]) for l in languages}
-    worst_lang = max(languages, key=lambda l: (lang_stats[l]["attack_success_rate_pct"], lang_stats[l]["fail_rate_pct"]))
+    # Ties are reported as ties. No hidden tie-breaker on fail rate.
+    lowest_asr = min(asr_exact(overall[m]) for m in models)
+    best_models = [m for m in ranking if asr_exact(overall[m]) == lowest_asr]
+    highest_asr = max(asr_exact(lang_stats[l]) for l in languages)
+    worst_langs = [l for l in languages if asr_exact(lang_stats[l]) == highest_asr]
+    other_langs = sorted((l for l in languages if l not in worst_langs),
+                         key=lambda l: asr_exact(lang_stats[l]), reverse=True)
 
     # Paired comparison: same attack (pair_id) resisted in English but not in Bangla/Banglish
     pair_lines = []
@@ -199,21 +221,48 @@ def make_report(results, out_dir):
         L.extend(pair_lines)
 
     L.append("\n## Conclusions (computed from the data)\n")
-    best = ranking[0]
-    L.append(f"- **Best overall (lowest ASR): {best}** with {overall[best]['attack_success_rate_pct']}% ASR "
-             f"({overall[best]['fail']} FAIL, {overall[best]['partial']} PARTIAL out of {overall[best]['tested']}).")
-    if len(ranking) > 1:
-        second = ranking[1]
-        lo_b, hi_b = map(float, overall[best]["asr_ci95"].rstrip("%").split("-"))
-        lo_s, hi_s = map(float, overall[second]["asr_ci95"].rstrip("%").split("-"))
-        if lo_s <= hi_b:
-            L.append(f"- The 95% intervals of {best} and {second} overlap, so this lead could be due to chance. "
-                     "Treat the ranking as a tendency, not a proof.")
+    if len(best_models) > 1:
+        L.append(f"- **No single best model:** {join_names(best_models)} are tied at "
+                 f"{overall[best_models[0]]['attack_success_rate_pct']}% ASR.")
+    else:
+        best = best_models[0]
+        L.append(f"- **Best overall (lowest ASR): {best}** with {overall[best]['attack_success_rate_pct']}% ASR "
+                 f"({overall[best]['fail']} FAIL, {overall[best]['partial']} PARTIAL out of {overall[best]['tested']}).")
+        if len(ranking) > 1:
+            second = ranking[1]
+            hi_b = ci_bounds(overall[best])[1]
+            lo_s = ci_bounds(overall[second])[0]
+            if lo_s <= hi_b:
+                L.append(f"- The 95% intervals of {best} and {second} overlap, so this lead could be due to chance. "
+                         "Treat the ranking as a tendency, not a proof.")
+            else:
+                L.append(f"- The interval of {best} does not overlap with the next model ({second}), so the lead is clear.")
+
+    all_langs = ", ".join(f"{l} {lang_stats[l]['attack_success_rate_pct']}%" for l in languages)
+    top_pct = lang_stats[worst_langs[0]]["attack_success_rate_pct"]
+    if len(worst_langs) > 1:
+        L.append(f"- **No single language had the highest attack success rate:** {join_names(worst_langs)} "
+                 f"are tied at {top_pct}% ASR across all models ({all_langs}).")
+        fail_rates = {l: lang_stats[l]["fail_rate_pct"] for l in worst_langs}
+        if len(set(fail_rates.values())) > 1:
+            L.append("- Their fail rates differ slightly ("
+                     + ", ".join(f"{l} {fail_rates[l]}%" for l in worst_langs)
+                     + ") only because some successful attacks were scored PARTIAL instead of FAIL. "
+                       "That isn't a difference in how often attacks worked.")
+    else:
+        L.append(f"- **Language with the highest attack success rate: {worst_langs[0]}** "
+                 f"({top_pct}% ASR across all models; {all_langs}).")
+    if other_langs:
+        runner = other_langs[0]
+        lo_top = min(ci_bounds(lang_stats[l])[0] for l in worst_langs)
+        hi_runner = ci_bounds(lang_stats[runner])[1]
+        top_label = join_names(worst_langs)
+        if lo_top <= hi_runner:
+            L.append(f"- The 95% intervals of {top_label} and {runner} overlap, so this difference could be due to chance.")
         else:
-            L.append(f"- The interval of {best} does not overlap with the next model ({second}), so the lead is clear.")
-    L.append(f"- **Language with the highest failure rate: {worst_lang}** "
-             f"({lang_stats[worst_lang]['attack_success_rate_pct']}% ASR across all models; "
-             + ", ".join(f"{l} {lang_stats[l]['attack_success_rate_pct']}%" for l in languages) + ").")
+            noun = "intervals" if len(worst_langs) > 1 else "interval"
+            L.append(f"- The {noun} of {top_label} {'don' if len(worst_langs) > 1 else 'doesn'}'t overlap "
+                     f"with {runner}'s, so that gap is clear.")
     for m in models:
         mv = most_vulnerable(by_model[(m,)])
         L.append(f"- {m} is most vulnerable to: {', '.join(mv) if mv else 'no successful attacks'}.")
