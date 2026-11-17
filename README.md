@@ -190,9 +190,9 @@ pip install -r requirements.txt     # requests + matplotlib
 `BL-07` are the same attack written in three languages, and they share
 `pair_id = 7`. That's what makes a paired cross-language comparison possible.
 
-**How the translations were made:** the English prompts were written first,
-and the Bangla and Banglish versions were machine-translated from them using
-Claude.
+**How the translations were made:** I wrote the English prompts first and
+translated them into Bangla and Banglish with Claude. As a native Bangla
+speaker, I then reviewed the translations and corrected them by hand.
 
 | Column | Meaning |
 |---|---|
